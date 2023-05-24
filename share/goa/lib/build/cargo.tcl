@@ -54,33 +54,28 @@ proc build { } {
 	lappend cmd --config target.x86_64-unknown-freebsd.linker="$cross_dev_prefix\gcc"
 	lappend cmd --config profile.release.panic="abort"
 
-	set copy { }
-	lappend copy "cp"
-	lappend copy "-l"
-
-
-	if {$verbose == 0} {
-		lappend cmd "-q"
-	}
+	set copy [list cp -l]
 
 	if {$verbose == 1} {
 		lappend cmd "-vv"
 		lappend copy "-v"
+	} else {
+		lappend cmd "-q"
 	}
 
 	set orig_pwd [pwd]
 	cd $build_dir
 	diag "build via command" {*}$cmd
 
-	if {[catch {exec -ignorestderr {*}$cmd | sed "s/^/\[$project_name:cargo\] /" >@ stdout}]} {
-		exit_with_error "build via cargo failed" }
+	if {[catch {exec -ignorestderr {*}$cmd | sed "s/^/\[$project_name:cargo\] /" >@ stdout} msg]} {
+		exit_with_error "build via cargo failed: $msg" }
 
 	diag "copy release binaries"
 	set binaries [exec find target/x86_64-unknown-freebsd/release -maxdepth 1 -type f -executable]
 	lappend copy $binaries .
 
-	if {[catch {exec -ignorestderr {*}$copy | sed "s/^/\[$project_name:copy\] /" >@ stdout}]} {
-		exit_with_error "moving release binary failed" }
+	if {[catch {exec -ignorestderr {*}$copy | sed "s/^/\[$project_name:copy\] /" >@ stdout} msg]} {
+		exit_with_error "moving release binary failed: $msg" }
 
 	cd $orig_pwd
 }
