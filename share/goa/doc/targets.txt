@@ -53,19 +53,20 @@ _runtime_ file's <requires> node:
   for its default domain.
 
 :<gpu/>:
-  Any required _Gpu_ service is ignored. However, the 'mesa_gpu_drv.lib.so'
-  ROM is routed to the 'mesa_gpu-softpipe.lib' ROM module.
+  Any required _Gpu_ service is routed to a black-hole component. Moreover,
+  the 'mesa_gpu_drv.lib.so' ROM is routed to the 'mesa_gpu-softpipe.lib' ROM
+  module.
 
 :<rom label="clipboard"/>:
-  The clipboard ROM requirement is routed to a report_rom component.
+  The clipboard _ROM_ requirement is routed to a report_rom component.
 
 :<report label="<label>"/>:
-  If <label> equals "clipboard", a Report requirement is routed to a report_rom
+  If <label> equals "clipboard", a _Report_ requirement is routed to a report_rom
   component. For any other label, the Report service is routed to a black-hole
   component.
 
 :<audio_in/> and <audio_out/>:
-  Any required Audio_in and Audio_out service is routed to a black-hole
+  Any required _Audio_in_ and _Audio_out_ service is routed to a black-hole
   component.
 
 
@@ -73,7 +74,7 @@ The 'linux' target evaluates the following services mentioned in the _runtime_
 file's <provides> node:
 
 :<uplink label="<tap-name>"/>:
-  For the first provided Uplink service a linux_nic_drv component is added to
+  For the first provided _Uplink_ service a linux_nic_drv component is added to
   the runtime and configured to use the tap device <tap-name>.
 
 
