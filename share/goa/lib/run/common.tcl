@@ -172,7 +172,7 @@ proc generate_runtime_config { runtime_file &runtime_archives &rom_modules } {
 	set binary [try_query_attr_from_file $runtime_file binary]
 
 	# get config XML from runtime file
-	lassign [_acquire_config $runtime_file] config routes
+	lassign [_acquire_config $runtime_file] config config_route
 
 	# list of services that are do not need to mentioned as requirement
 	set base_services   [list CPU PD LOG]
@@ -206,6 +206,7 @@ proc generate_runtime_config { runtime_file &runtime_archives &rom_modules } {
 
 	set start_nodes ""
 	set provides ""
+	set routes ""
 
 	# add provided services to <provides>
 	foreach service_name [array names provided_services] {
@@ -291,6 +292,10 @@ proc generate_runtime_config { runtime_file &runtime_archives &rom_modules } {
 		lappend runtime_archives "$run_as/src/black_hole"
 	}
 
+	set inline_config ""
+	if {$config_route == ""} {
+		set inline_config $config }
+
 	install_config {
 		<config>
 			<parent-provides>
@@ -308,14 +313,14 @@ proc generate_runtime_config { runtime_file &runtime_archives &rom_modules } {
 				<resource name="RAM" quantum="} $ram {"/>
 				<binary name="} $binary {"/>
 				<provides>} $provides {</provides>
-				<route>} $routes {
+				<route>} $config_route $routes {
 					<service name="ROM">   <parent/> </service>
 					<service name="PD">    <parent/> </service>
 					<service name="RM">    <parent/> </service>
 					<service name="CPU">   <parent/> </service>
 					<service name="LOG">   <parent/> </service>
 				</route>
-				} $config {
+				} $inline_config {
 			</start>
 		</config>
 	}
@@ -323,6 +328,7 @@ proc generate_runtime_config { runtime_file &runtime_archives &rom_modules } {
 	lappend runtime_archives "$run_as/src/init"
 	lappend runtime_archives {*}[base_archives]
 
+	# remove duplicates from rom_modules but keep sorting of runtime_archives
+	# intact because the order determines potential shadowing of files
 	set rom_modules      [lsort -unique $rom_modules]
-	set runtime_archives [lsort -unique $runtime_archives]
 }

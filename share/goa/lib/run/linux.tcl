@@ -469,20 +469,20 @@ proc _instantiate_file_system { name label writeable &start_nodes &archives &mod
 	global var_dir run_as
 
 	append start_nodes {
-		<start name="} $name {" caps="100" ld="no">
-			<binary name="lx_fs"/>
-			<resource name="RAM" quantum="1M"/>
-			<provides> <service name="File_system"/> </provides>
-			<config>
-				<default-policy root="/fs/} $label {" writeable="} $writeable {" />
-			</config>
-			<route>
-				<service name="PD">  <parent/> </service>
-				<service name="CPU"> <parent/> </service>
-				<service name="LOG"> <parent/> </service>
-				<service name="ROM"> <parent/> </service>
-			</route>
-		</start>
+			<start name="} $name {" caps="100" ld="no">
+				<binary name="lx_fs"/>
+				<resource name="RAM" quantum="1M"/>
+				<provides> <service name="File_system"/> </provides>
+				<config>
+					<default-policy root="/fs/} $label {" writeable="} $writeable {" />
+				</config>
+				<route>
+					<service name="PD">  <parent/> </service>
+					<service name="CPU"> <parent/> </service>
+					<service name="LOG"> <parent/> </service>
+					<service name="ROM"> <parent/> </service>
+				</route>
+			</start>
 	}
 
 	# create folder in var_dir
