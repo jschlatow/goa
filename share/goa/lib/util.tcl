@@ -158,7 +158,7 @@ proc find_project_dir_for_archive { type name } {
 	if {$type == "src" || $type == "bin"} {
 		set candidates [glob -nocomplain */$name/{src,import,artifacts} ./$name/{src,import,artifacts}]
 	} elseif {$type == "api"} {
-		set candidates [glob -nocomplain -f */$name/api ./$name/api]
+		set candidates [glob -nocomplain -type f */$name/api ./$name/api]
 	} elseif {$type == "pkg"} {
 		set candidates [glob -nocomplain -type d */pkg/$name]
 	} elseif {$type == "raw"} {
