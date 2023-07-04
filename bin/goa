@@ -1218,7 +1218,7 @@ proc export_dependent_project { dir arch depot_overwrite { pkg_name "" } } {
 
 	diag "exporting project $dir via cmd: $cmd"
 
-	exec {*}$cmd >@ stdout
+	exec -ignorestderr {*}$cmd >@ stdout
 
 	cd $orig_pwd
 
@@ -1475,6 +1475,11 @@ if {$perform(export)} {
 					set dir [find_project_dir_for_archive $type $name]
 					if {[project_version $dir] != $vers} {
 						log "skipping export of $dir due to version mismatch"
+						continue
+					}
+
+					if {$user != $depot_user} {
+						log "skipping export of $dir: must be exported as depot user '$user'"
 						continue
 					}
 
