@@ -154,15 +154,22 @@ proc find_project_dir_for_archive { type name } {
 	set orig_pwd [pwd]
 	set candidates ""
 
+	set find_cmd_base [list find -not -path "*/depot/*" \
+	                        -and -not -path "*/contrib/*" \
+	                        -and -not -path "*/build/*" \
+	                        -and -not -path "*/var/*"]
+
 	cd $original_dir
 	if {$type == "src" || $type == "bin"} {
-		set candidates [glob -nocomplain */$name/{src,import,artifacts} ./$name/{src,import,artifacts}]
+		set candidates [exec {*}$find_cmd_base -and \( -path */$name/src \
+		                                           -or -path */$name/import \
+		                                           -or -path */$name/artifacts \)]
 	} elseif {$type == "api"} {
-		set candidates [glob -nocomplain -type f */$name/api ./$name/api]
+		set candidates [exec {*}$find_cmd_base -and -path */$name/api -type f]
 	} elseif {$type == "pkg"} {
-		set candidates [glob -nocomplain -type d */pkg/$name]
+		set candidates [exec {*}$find_cmd_base -and -path */pkg/$name -type d]
 	} elseif {$type == "raw"} {
-		set candidates [glob -nocomplain -type d */$name/raw ./$name/raw]
+		set candidates [exec {*}$find_cmd_base -and -path */$name/raw -type d]
 	}
 	cd $orig_pwd
 
