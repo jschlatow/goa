@@ -1129,7 +1129,7 @@ proc prepare_project_archive_directory { type { pkg_name "" } } {
 		if {$policy == "overwrite"} {
 			file delete -force $dst_dir
 		} elseif {$policy == "retain"} {
-			log "archive $archive already exists in depot"
+			log "retaining existing depot archive $archive"
 			return ""
 		} else {
 			exit_with_error "archive $archive already exists in the depot\n" \
