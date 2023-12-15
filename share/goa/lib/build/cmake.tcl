@@ -4,7 +4,7 @@ proc create_or_update_build_dir { } {
 	global build_dir project_dir abi_dir tool_dir cross_dev_prefix include_dirs
 	global cppflags cflags cxxflags ldflags ldflags_so ldlibs_common ldlibs_exe ldlibs_so project_name
 	global cmake_quirk_args
-	global env
+	global env api_dirs
 
 	if {![file exists $build_dir]} {
 		file mkdir $build_dir }
@@ -16,8 +16,8 @@ proc create_or_update_build_dir { } {
 
 	set cmd { }
 	lappend cmd cmake
-	lappend cmd "-DCMAKE_MODULE_PATH=[file join $tool_dir cmake Modules]"
 	lappend cmd "-DCMAKE_IGNORE_PREFIX_PATH=/usr/"
+	lappend cmd "-DCMAKE_MODULE_PATH=[join ${api_dirs} ";"];[file join $tool_dir cmake Modules]"
 	lappend cmd "-DCMAKE_SYSTEM_NAME=Genode"
 	lappend cmd "-DCMAKE_C_COMPILER=${cross_dev_prefix}gcc"
 	lappend cmd "-DCMAKE_CXX_COMPILER=${cross_dev_prefix}g++"
