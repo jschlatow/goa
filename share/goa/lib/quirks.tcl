@@ -1,30 +1,3 @@
-##
-# Add include search path whenever using the given 'api'
-#
-# \param api   API for which the input-search path must be extended
-# \param args  include-search path elements relative to the API archive
-#
-proc append_include_dir_for_api { api args } {
-
-	if {[using_api $api]} {
-		global include_dirs
-		lappend include_dirs [file join [api_archive_dir $api] {*}$args]
-	}
-}
-
-# C runtime
-
-append_include_dir_for_api libc  include libc
-append_include_dir_for_api libc  include libc-genode
-
-if {$arch == "x86_64"} {
-	append_include_dir_for_api libc  include spec x86    libc
-	append_include_dir_for_api libc  include spec x86_64 libc
-}
-
-if {$arch == "arm_v8a"} {
-	append_include_dir_for_api libc  include spec arm_64 libc
-}
 
 if {[using_api libc]} {
 
@@ -41,19 +14,7 @@ if {[using_api compat-libc]} {
 	lappend lib_src [file join $compat_libc_dir compat.cc]
 }
 
-# Standard C++ library
-
-append_include_dir_for_api stdcxx  include stdcxx
-append_include_dir_for_api stdcxx  include stdcxx std
-append_include_dir_for_api stdcxx  include stdcxx c_global
-
-if {$arch == "x86_64"}  { append_include_dir_for_api stdcxx  include spec x86_64 stdcxx }
-if {$arch == "arm_v8a"} { append_include_dir_for_api stdcxx  include spec arm_64 stdcxx }
-
 # SDL
-
-append_include_dir_for_api sdl        include SDL
-append_include_dir_for_api sdl_image  include SDL
 
 if {[using_api sdl]} {
 
@@ -70,11 +31,6 @@ if {[using_api sdl]} {
 }
 
 # SDL2
-
-append_include_dir_for_api sdl2        include SDL2
-append_include_dir_for_api sdl2_mixer  include SDL2
-append_include_dir_for_api sdl2_image  include SDL2
-append_include_dir_for_api sdl2_ttf    include SDL2
 
 if {[using_api sdl2]} {
 
