@@ -3,34 +3,18 @@
 #
 set include_dirs { }
 foreach api $used_apis {
-	# look for import-<api_name>.mk file, if present take include dirs from this file
+	# look for import-<api_name>.mk file
 	set import_file [glob -nocomplain -directory [file join $depot_dir $api lib import] import-[archive_name $api].mk]
-	if {[llength $import_file]} {
-		set cmd "make"
-		lappend cmd "-f"
-		lappend cmd [file join $tool_dir mk import_api.mk]
-		lappend cmd "REPOSITORIES=[file join $depot_dir $api]"
-		lappend cmd "IMPORT_MK=$import_file"
-		lappend cmd "TOOL_DIR=$tool_dir"
 
-		set dirs [exec {*}$cmd]
-		lappend include_dirs {*}$dirs
+	set cmd "make"
+	lappend cmd "-f"
+	lappend cmd [file join $tool_dir mk import_api.mk]
+	lappend cmd "REPOSITORIES=[file join $depot_dir $api]"
+	lappend cmd "IMPORT_MK=$import_file"
+	lappend cmd "TOOL_DIR=$tool_dir"
 
-		continue
-	}
-
-	# apply include dir convention if there are no import-*.mk files
-	set dir [file join $depot_dir $api include]
-
-	if {$arch == "x86_64"} {
-		lappend include_dirs [file join $dir spec x86_64]
-		lappend include_dirs [file join $dir spec x86]
-	}
-	if {$arch == "arm_v8a"} {
-		lappend include_dirs [file join $dir spec arm_64]
-	}
-	lappend include_dirs [file join $dir spec 64bit]
-	lappend include_dirs $dir
+	set dirs [exec {*}$cmd]
+	lappend include_dirs {*}$dirs
 }
 
 set libgcc_path    [file normalize [eval "exec $cross_dev_prefix\gcc -print-libgcc-file-name"]]
