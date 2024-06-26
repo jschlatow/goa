@@ -1087,7 +1087,6 @@ if {$perform(run-dir)} {
 
 
 if {$perform(run)} {
-
 	run_genode
 }
 
