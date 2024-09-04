@@ -1,5 +1,7 @@
 proc run_genode { } {
-	global run_dir tool_dir var_dir target target_opt project_name depot_dir debug
+	global tool_dir
+	global config::run_dir config::var_dir config::target config::target_opt
+	global config::project_name config::depot_dir config::debug
 
 	if {![info exists target_opt($target-server)]} {
 		exit_with_error "missing target option '$target-server'\n" \
@@ -100,7 +102,7 @@ proc parent_services { } {
 
 
 proc base_archives { } {
-	global run_as target target_opt
+	global config::run_as config::target config::target_opt
 
 	if {[info exists target_opt($target-kernel)]} {
 		set kernel $target_opt($target-kernel)
@@ -116,7 +118,7 @@ proc log_route { } { return "<parent/>" }
 
 
 proc pd_route  { } {
-	global debug
+	global config::debug
 	if { $debug } { return "<local/>" }
 
 	return "<parent/>"
@@ -124,7 +126,7 @@ proc pd_route  { } {
 
 
 proc cpu_route { } {
-	global debug
+	global config::debug
 	if { $debug } { return "<local/>" }
 
 	return "<parent/>"
@@ -277,7 +279,7 @@ proc _instantiate_fonts_fs { &start_nodes &archives &modules } {
 	upvar 1 ${&archives} archives
 	upvar 1 ${&modules} modules
 
-	global run_as
+	global config::run_as
 
 	append start_nodes {
 			<start name="fonts_fs" caps="100">
