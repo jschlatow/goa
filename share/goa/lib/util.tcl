@@ -21,7 +21,7 @@ proc stacktrace { } {
 
 
 proc exit_with_error { args } {
-	global project_name verbose
+	global config::project_name verbose
 
 	if {[info exists project_name]} {
 		puts -nonewline stderr "\[$project_name\] " }
@@ -37,7 +37,7 @@ proc exit_with_error { args } {
 # Print diagnostic message in verbose mode
 #
 proc diag { args } {
-	global verbose project_name
+	global verbose config::project_name
 
 	if {$verbose} {
 		if {[info exists project_name]} {
@@ -52,7 +52,7 @@ proc diag { args } {
 # Unconditionally print message, prefixed with the project name
 #
 proc log { args } {
-	global project_name
+	global config::project_name
 
 	if {[info exists project_name]} {
 		puts -nonewline "\[$project_name\] " }
@@ -175,7 +175,7 @@ proc consume_prefixed_cmdline_args { prefix &var } {
 
 
 proc depot_policy { } {
-	global depot_overwrite depot_retain
+	global config::depot_overwrite config::depot_retain
 
 	if { $depot_retain }    { return "retain" }
 	if { $depot_overwrite } { return "overwrite" }
@@ -281,7 +281,7 @@ proc looks_like_goa_project_dir { dir } {
 # Build up cache of potential project directories
 #
 proc _build_project_dir_cache { type } {
-	global search_dir project_dir_cache
+	global config::search_dir project_dir_cache
 
 	if {![array exists project_dir_cache]} {
 		array set project_dir_cache {} }
@@ -340,7 +340,7 @@ proc _build_project_dir_cache { type } {
 # called with -C or from $search_dir
 #
 proc find_project_dir_for_archive { type name } {
-	global search_dir project_dir_cache
+	global config::search_dir project_dir_cache
 
 	if {$type == "bin"} {
 		set type "src" }
@@ -381,7 +381,7 @@ proc project_version_from_file { dir } {
 # Determine project version for a particular archive during export
 #
 proc exported_project_archive_version { dir archive } {
-	global version
+	global config::version
 
 	catch {
 		set archive_version [project_version_from_file $dir]
@@ -415,7 +415,7 @@ proc exported_project_archive_version { dir archive } {
 # If no version information is available, the original working directory is
 # scanned for corresponding Goa projects.
 proc apply_versions { archive_list } {
-	global version versions_from_genode_dir
+	global config::version config::versions_from_genode_dir
 
 	set versioned_archives { }
 	foreach archive $archive_list {
@@ -484,7 +484,7 @@ proc apply_arch { archive arch } {
 # Return list of binary archives for a given list of versioned source archives
 #
 proc binary_archives { archive_list } {
-	global arch depot_dir
+	global config::arch config::depot_dir
 
 	set bin_archives { }
 	foreach archive $archive_list {
@@ -522,7 +522,7 @@ proc binary_archives { archive_list } {
 # Return list of runtime files for a given list of versioned archives
 #
 proc runtime_files { archive_list } {
-	global arch depot_dir
+	global config::arch config::depot_dir
 
 	set runtime_file_list { }
 	foreach archive $archive_list {
@@ -627,7 +627,7 @@ proc archive_user { archive } {
 
 
 proc api_archive_dir { api_name } {
-	global used_apis depot_dir
+	global config::depot_dir
 	foreach archive [goa used_apis] {
 		archive_parts $archive user type name version
 		if {$version != "" && $name == $api_name} {
@@ -669,8 +669,7 @@ proc symlink_directory_content { file_whitelist from_dir to_dir } {
 #
 proc mirror_source_dir_to_build_dir { } {
 
-	global build_dir
-	global project_dir
+	global config::build_dir config::project_dir
 
 	#
 	# Mirror structure of source dir in build dir using symbolic links
@@ -715,7 +714,7 @@ proc mirror_source_dir_to_build_dir { } {
 # Install Genode config into run directory
 #
 proc install_config { args } {
-	global run_dir
+	global config::run_dir
 	set fh [open [file join $run_dir config] "WRONLY CREAT TRUNC"]
 	set lines [split [join $args {}] "\n"]
 
@@ -893,7 +892,7 @@ proc avail_goa_branches { } {
 
 proc assert_definition_of_depot_user { } {
 
-	global depot_user
+	global config::depot_user
 	if {[info exists depot_user]} {
 		return }
 
@@ -908,7 +907,7 @@ proc assert_definition_of_depot_user { } {
 # strip debug symbols from binary
 #
 proc strip_binary { file } {
-	global cross_dev_prefix
+	global config::cross_dev_prefix
 
 	set cmd "$cross_dev_prefix\strip"
 	lappend cmd "$file"
@@ -921,7 +920,7 @@ proc strip_binary { file } {
 # extract debug info files
 #
 proc extract_debug_info { file } {
-	global cross_dev_prefix dbg_dir
+	global config::cross_dev_prefix config::dbg_dir
 
 	##
 	# check whether file has debug info and bail if not
