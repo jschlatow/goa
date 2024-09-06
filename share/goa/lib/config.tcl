@@ -69,8 +69,33 @@ namespace eval ::config {
 	}
 
 
+	# used as alias for 'lappend' in child interpreter
+	proc _lappend_allowed_paths { safeinterp args } {
+		global allowed_paths
+
+		set nargs [llength $args]
+		if {$nargs < 2} { return }
+
+		set name  [lindex $args 0]
+		set value [lindex $args 1]
+		if {$name == "allowed_paths"} {
+			# de-reference home directory
+			regsub {^~} $::env(HOME) value
+
+			# convert relative path to absolute path
+			set value [file normalize $value]
+
+			lappend allowed_paths $value
+		} else {
+			$safeinterp invokehidden lappend {*}$args
+		}
+	}
+
+
 	# used as alias for 'set' in child interpreter
 	proc _safe_set { rcfile args } {
+		global allowed_paths
+
 		set nargs [llength $args]
 		if {$nargs < 1} { return }
 
@@ -101,6 +126,24 @@ namespace eval ::config {
 
 			# convert relative path to absolute path
 			set value [file normalize $value]
+
+			# check that path is subdirectory of pwd, project dir or one of
+			# the user-defined directories
+			set valid_path 0
+			foreach path $allowed_paths {
+				if {[regexp "^$path" $value]} {
+					set valid_path 1
+					break
+				}
+			}
+			if {!$valid_path} {
+				exit_with_error "In $rcfile:" \
+				                "\n Path variable '$name' set to '$value'" \
+				                "\n defines an invalid path. Valid paths are:\n" \
+				                "\n [join $allowed_paths "\n "]" \
+				                "\n\n You may consider setting 'allowed_paths' in" \
+				                "your \$HOME/goarc or /goarc file."
+			}
 		}
 
 		return [set ::config::$name $value]
@@ -108,7 +151,11 @@ namespace eval ::config {
 
 
 	proc load_goarc_files {} {
-		global tool_dir config::project_dir
+		global tool_dir original_dir config::project_dir
+		global allowed_paths
+
+		set allowed_paths [list [file normalize $project_dir] [file normalize $original_dir]]
+		set allowed_paths [lsort -unique $allowed_paths]
 
 		interp create -safe safeinterp
 		safeinterp hide set
@@ -116,6 +163,12 @@ namespace eval ::config {
 		set rcfile [file join $tool_dir goarc]
 		safeinterp alias set config::_safe_set $rcfile
 		safeinterp invokehidden source $rcfile
+
+		#
+		# build list of privileged goarc files
+		#
+		lappend privileged_rcfiles [file normalize $::env(HOME)]
+		lappend privileged_rcfiles [file normalize "/"]
 
 		#
 		# Read the hierarcy of 'goarc' files
@@ -146,6 +199,12 @@ namespace eval ::config {
 				#
 				cd $goarc_path
 				safeinterp alias set config::_safe_set $goarc_file_path
+
+				# install alias for privileged goarc files
+				if {[lsearch -exact $privileged_rcfiles $goarc_path] >= 0} {
+					safeinterp hide  lappend
+					safeinterp alias lappend config::_lappend_allowed_paths safeinterp
+				}
 				safeinterp invokehidden source $goarc_file_path
 			}
 		}
