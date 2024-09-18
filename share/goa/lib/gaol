@@ -1,4 +1,4 @@
-#!/usr/bin/env expect
+#!/usr/bin/env tclsh
 #
 # \brief  Tool for sandboxed execution of Genode build tools
 # \author Johannes Schlatow
@@ -39,26 +39,6 @@ namespace eval gaol {
 		gaol --ro-bind /usr {*}$args
 	}
 
-	proc --env-home { path args } {
-		gaol::validate_no_opt $path
-
-		variable state
-		dict update state env _env chdir _chdir {
-			dict set _env HOME $path
-			set _chdir $path
-		}
-		gaol::parse_next args
-	}
-
-	proc --home-dir { path args } {
-		gaol::validate_path_exists $path
-
-		variable state
-		dict lappend state binds $path /home
-
-		gaol --env-home /home {*}$args
-	}
-
 	proc --env-path { path args } {
 		gaol::validate_no_opt $path
 
@@ -71,6 +51,8 @@ namespace eval gaol {
 		variable state
 		dict set state network 1
 
+		dict lappend state robinds /etc/ssl /etc/ssl
+		dict lappend state robinds /etc/ca-certificates /etc/ca-certificates
 		gaol --ro-bind /etc/resolv.conf {*}$args
 	}
 
@@ -84,6 +66,8 @@ namespace eval gaol {
 
 	proc --ro-bind { path args } {
 		gaol::validate_no_opt $path
+
+		set path [file normalize $path]
 		gaol::validate_path_exists $path
 
 		variable state
@@ -93,6 +77,8 @@ namespace eval gaol {
 
 	proc --bind { path args } {
 		gaol::validate_no_opt $path
+
+		set path [file normalize $path]
 		gaol::validate_path_exists $path
 
 		variable state
@@ -109,34 +95,59 @@ namespace eval gaol {
 		gaol::parse_next args
 	}
 
+	proc --chdir { path args } {
+		gaol::validate_no_opt $path
+
+		variable state
+		dict set state chdir $path
+		gaol::parse_next args
+	}
+
 	proc --depot-dir { path args } {
 		gaol::validate_no_opt $path
+
+		set path [file normalize $path]
 		gaol::validate_path_exists $path
 
 		variable state
-		dict lappend state makeargs DEPOT_DIR=/depot
-		dict lappend state binds $path /depot
+		dict lappend state makeargs DEPOT_DIR=$path
+		dict lappend state binds $path $path
 		gaol::parse_next args
 	}
 
 	proc --depot-tool { path args } {
 		gaol::validate_no_opt $path
+
+		set path [file normalize $path]
 		gaol::validate_path_exists $path
 
 		variable state
 		dict lappend state makeargs DEPOT_TOOL_DIR=/tool/depot
-		dict lappend state makeargs REPOSITORIES=
 		dict lappend state binds $path /tool/depot
+		gaol::parse_next args
+	}
+
+	proc --ports-tool { path args } {
+		gaol::validate_no_opt $path
+
+		set path [file normalize $path]
+		gaol::validate_path_exists $path
+
+		variable state
+		dict lappend state makeargs PORTS_TOOL_DIR=/tool/ports
+		dict lappend state binds $path /tool/ports
 		gaol::parse_next args
 	}
 
 	proc --public-dir { path args } {
 		gaol::validate_no_opt $path
+
+		set path [file normalize $path]
 		gaol::validate_path_exists $path
 
 		variable state
-		dict lappend state makeargs PUBLIC_DIR=/public
-		dict lappend state binds $path /public
+		dict lappend state makeargs PUBLIC_DIR=$path
+		dict lappend state binds $path $path
 		gaol::parse_next args
 	}
 
@@ -185,12 +196,11 @@ namespace eval gaol {
 			"  --verbose               Enable verbose output" \
 			"" \
 			"Meta options (multiple bubblewrap arguments):" \
-			"  --depot-dir <path>      Binds <path> at /depot" \
+			"  --depot-dir <path>      Binds <path> and sets DEPOT_DIR make variable" \
 			"  --depot-tool <path>     Binds <path> at /tool/depot" \
-			"  --home-dir <path>       Binds <path> at /home and set HOME variable" \
-			"  --env-home <path>       Sets the HOME to <path> variable" \
+			"  --ports-tool <path>     Binds <path> at /tool/ports" \
 			"  --env-path <path>       Adds <path> to the PATH variable" \
-			"  --public-dir <path>     Binds <path> at /public" \
+			"  --public-dir <path>     Binds <path> and sets PUBLIC_DIR make variable" \
 			"  --system-usr            Bind /usr from host system and create symlinks" \
 			"  --with-network          Enable network access" \
 			"" \
@@ -201,6 +211,7 @@ namespace eval gaol {
 			"                          the use of keyboxd" \
 			"" \
 			"Passed-through options:" \
+			"  --chdir <path>          Use <path> as working directory" \
 			"  --bind <path>           Bind mount the host path <path>" \
 			"  --dir <path>            Create an empty directory <path>" \
 			"  --ro-bind <path>        Bind mount the host path <path> read-only" \
@@ -217,6 +228,7 @@ namespace eval gaol {
 	}
 
 	proc validate_path_exists { path } {
+		set caller [lindex [split [info level -1] ":"] 4]
 		if {![file exists $path]} {
 			return -code error "$path does not exist:\n in $caller" }
 	}
@@ -240,6 +252,7 @@ namespace eval gaol {
 	}
 
 	proc run { bin args } {
+		global error_spawn_id user_spawn_id
 		variable state
 
 		# user run dir
@@ -257,22 +270,17 @@ namespace eval gaol {
 		lappend cmd --dir $run_dir
 		lappend cmd --setenv XDG_RUNTIME_DIR "$run_dir"
 		lappend cmd --setenv DISPLAY ":0.0"
+		lappend cmd --setenv HOME $::env(HOME)
 
 		dict with state {
 			if {[info exists gpg]} {
-				if {![dict exists env HOME]} {
-					lappend dirs /home
-					dict set env HOME /home
-				}
-
-				set gpghome [file join [dict get $env HOME] .gnupg]
 				switch $gpg {
 					user {
 						set gpgdirs [exec gpgconf --list-dirs]
 						foreach dir $gpgdirs {
 							lassign [split $dir ":"] name path
 							switch $name {
-								homedir   { lappend binds $path $gpghome }
+								homedir   { lappend binds $path $path }
 								socketdir { lappend binds $path $path }
 							}
 						}
@@ -280,7 +288,7 @@ namespace eval gaol {
 					empty {
 						# if ~/.gnupg does not exist, gpg creates a common.conf with use-keyboxd
 						# we therefore create an empty ~/.gnupg
-						lappend cmd --perms 0700 --tmpfs $gpghome
+						lappend cmd --perms 0700 --tmpfs [file join $::env(HOME) .gnupg]
 					}
 				}
 			}
@@ -309,12 +317,18 @@ namespace eval gaol {
 		if {[dict get $state network]} {
 			lappend cmd --share-net }
 
-		if {![dict get $state verbose]} {
-			spawn -noecho {*}$cmd $bin {*}$args {*}$makeargs
-		} else {
-			spawn {*}$cmd $bin {*}$args {*}$makeargs
+		if {[dict get $state verbose]} {
+			puts "Executing: $cmd $bin $args $makeargs" }
+
+		if {[catch {exec {*}$cmd $bin {*}$args {*}$makeargs <@ stdin >@ stdout 2>@ stderr} results options]} {
+			if {[dict get $options -code] == 1} {
+				exit [lindex $::errorCode 2]
+			} else {
+				puts stderr "Internal error"
+				exit 1
+			}
 		}
-		interact -i $spawn_id
+
 		exit
 	}
 }
@@ -328,12 +342,8 @@ if {[file link /bin] != "usr/bin"} {
 }
 
 if {[auto_execok "bwrap"] == ""} {
-	puts "\n'bwrap' binary not found. Please install bubblewrap!\n"
+	puts stderr "\n'bwrap' binary not found. Please install bubblewrap!\n"
 	exit 1
 }
 
-if {[catch { gaol {*}$argv } msg]} {
-	puts "Error: $msg"
-}
-
-# vim: filetype=tcl
+gaol {*}$argv
