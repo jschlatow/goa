@@ -872,8 +872,8 @@ proc try_query_attr_from_file { runtime_file attr } {
 
 
 proc goa_git { args } {
-	global tool_dir
-	return [exec -ignorestderr git -C $tool_dir {*}$args]
+	global gaol tool_dir
+	return [exec -ignorestderr $gaol --system-usr --home-dir [file join $tool_dir .. ..] git {*}$args]
 }
 
 
