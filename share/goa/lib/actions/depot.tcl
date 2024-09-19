@@ -515,7 +515,7 @@ namespace eval goa {
 
 	proc export-dbg { } {
 
-		global dbg_dir
+		global config::dbg_dir
 
 		# create dbg archive
 		if {[file exists $dbg_dir] && [file isdirectory $dbg_dir]} {
