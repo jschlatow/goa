@@ -53,6 +53,38 @@ namespace eval goa {
 	}
 
 
+	proc gaol_with_toolchain { {silent 0} } {
+
+		global   gaol verbose allowed_tools
+
+		set     cmd $gaol
+		lappend cmd --system-usr
+
+		foreach dir [lsearch -all -inline -not $allowed_tools /usr*] {
+			lappend cmd --ro-bind $dir }
+
+		if {$verbose && !$silent} {
+			lappend cmd --verbose }
+
+		return $cmd
+	}
+
+
+	proc exec_tool_chain { bin args } {
+
+		global config::cross_dev_prefix config::build_dir
+
+		set cmd [gaol_with_toolchain 1]
+
+		if {[file exists $build_dir]} {
+			lappend cmd --bind $build_dir }
+
+		lappend cmd $cross_dev_prefix$bin
+
+		exec {*}$cmd {*}$args
+	}
+
+
 	proc used_apis { } {
 
 		variable _used_apis
@@ -64,6 +96,51 @@ namespace eval goa {
 		}
 
 		return $_used_apis
+	}
+
+	##
+	# strip debug symbols from binary
+	#
+	proc strip_binary { file } {
+		catch { exec_tool_chain strip "$file" }
+	}
+
+
+	##
+	# extract debug info files
+	#
+	proc extract_debug_info { file } {
+
+		##
+		# check whether file has debug info and bail if not
+		#
+
+		if {[catch { exec_tool_chain objdump -hj .debug_info "$file" }]} {
+			diag "file \"$file\" has no debug info"
+			return }
+
+		##
+		# create debug info file
+		#
+			#
+		if {[catch { exec_tool_chain objcopy --only-keep-debug "$file" "$file.debug" }]} {
+			diag "unable to extract debug info file from $file"
+			return
+		}
+
+		##
+		# add gnu_debuglink section to binary
+		#
+
+		# change dir because --add-gnu-debuglink expect .debug file in working dir
+		set filename [file tail $file]
+		set orig_pwd [pwd]
+		cd [file dirname $file]
+
+		if {[catch { exec_tool_chain objcopy --add-gnu-debuglink=$filename.debug $filename }]} {
+			diag "unable to add gnu_debuglink section to $file" }
+
+		cd $orig_pwd
 	}
 
 
