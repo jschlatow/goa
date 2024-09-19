@@ -907,17 +907,30 @@ proc assert_definition_of_depot_user { } {
 	                "\n command-line argument.\n"
 }
 
+##
+# Utility for executing tool-chain binary (in sandbox)
+#
+proc exec_tool_chain { bin args } {
+	global gaol verbose
+	global config::cross_dev_prefix config::build_dir
+
+	set     cmd $gaol
+	lappend cmd --system-usr
+
+	if {[file exists $build_dir]} {
+		lappend cmd --bind $build_dir }
+
+	lappend cmd $cross_dev_prefix$bin
+
+	exec {*}$cmd {*}$args
+}
+
 
 ##
 # strip debug symbols from binary
 #
 proc strip_binary { file } {
-	global config::cross_dev_prefix
-
-	set cmd "$cross_dev_prefix\strip"
-	lappend cmd "$file"
-
-	catch { exec {*}$cmd }
+	catch { exec_tool_chain strip "$file" }
 }
 
 
@@ -925,31 +938,20 @@ proc strip_binary { file } {
 # extract debug info files
 #
 proc extract_debug_info { file } {
-	global config::cross_dev_prefix config::dbg_dir
 
 	##
 	# check whether file has debug info and bail if not
 	#
 
-	set cmd "$cross_dev_prefix\objdump"
-	lappend cmd "-hj"
-	lappend cmd ".debug_info"
-	lappend cmd "$file"
-
-	if {[catch { exec {*}$cmd }]} {
+	if {[catch { exec_tool_chain objdump -hj .debug_info "$file" }]} {
 		diag "file \"$file\" has no debug info"
 		return }
 
 	##
 	# create debug info file
 	#
-
-	set cmd "$cross_dev_prefix\objcopy"
-	lappend cmd "--only-keep-debug"
-	lappend cmd "$file"
-	lappend cmd "$file.debug"
-
-	if {[catch { exec {*}$cmd }]} {
+		#
+	if {[catch { exec_tool_chain objcopy --only-keep-debug "$file" "$file.debug" }]} {
 		diag "unable to extract debug info file from $file"
 		return
 	}
@@ -963,11 +965,7 @@ proc extract_debug_info { file } {
 	set orig_pwd [pwd]
 	cd [file dirname $file]
 
-	set cmd "$cross_dev_prefix\objcopy"
-	lappend cmd "--add-gnu-debuglink=$filename.debug"
-	lappend cmd "$filename"
-
-	if {[catch { exec {*}$cmd }]} {
+	if {[catch { exec_tool_chain objcopy --add-gnu-debuglink=$filename.debug $filename }]} {
 		diag "unable to add gnu_debuglink section to $file" }
 
 	cd $orig_pwd
