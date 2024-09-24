@@ -246,6 +246,8 @@ namespace eval goa {
 		global config::arch config::olevel config::cc_march config::debug
 		global config::cc_cxx_opt_std config::ld_march config::abi_dir
 		global config::build_dir api_dirs
+		global config::with_backtrace config::warn_strict config::depot_user
+		global config::project_name config::project_dir
 
 		#
 		# Check for availability of the Genode tool chain
