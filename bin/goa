@@ -265,8 +265,12 @@ if {$perform(run)} {
 			                "\n argument."
 		}
 
-		cd $config::run_dir
-		exec [file join $tool_dir lib backtrace] $config::binary_name >@ stdout < $filename
+		set     cmd $gaol
+		lappend cmd --system-usr
+		lappend cmd --ro-bind [file join $tool_dir lib]
+		lappend cmd --ro-bind $config::var_dir
+		lappend cmd --chdir $config::run_dir
+		exec {*}$cmd [file join $tool_dir lib backtrace] $config::binary_name >@ stdout < $filename
 	}
 
 	exit
