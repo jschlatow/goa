@@ -26,6 +26,7 @@ namespace eval ::config {
 	variable run_as                   "genodelabs"
 	variable target                   "linux"
 	variable sculpt_version           ""
+	variable toolchain_version        ""
 	variable cc_cxx_opt_std           "-std=gnu++20"
 	variable binary_name              ""
 	variable with_backtrace           0
@@ -40,6 +41,7 @@ namespace eval ::config {
 	variable run_dir                  ""
 	variable bin_dir                  ""
 	variable dbg_dir                  ""
+	variable install_dir              ""
 	variable target_opt
 	array set target_opt {}
 	variable version
@@ -318,6 +320,7 @@ namespace eval ::config {
 		variable run_as
 		variable binary_name
 		variable var_dir
+		variable toolchain_version
 
 		if {$versions_from_genode_dir == ""} { unset versions_from_genode_dir }
 		if {$license                  == ""} { unset license }
@@ -339,8 +342,8 @@ namespace eval ::config {
 
 		if {![info exists cross_dev_prefix]} {
 			switch $arch {
-			arm_v8a { set cross_dev_prefix "/usr/local/genode/tool/23.05/bin/genode-aarch64-" }
-			x86_64  { set cross_dev_prefix "/usr/local/genode/tool/23.05/bin/genode-x86-"  }
+			arm_v8a { set cross_dev_prefix "/usr/local/genode/tool/$toolchain_version/bin/genode-aarch64-" }
+			x86_64  { set cross_dev_prefix "/usr/local/genode/tool/$toolchain_version/bin/genode-x86-"  }
 			default { exit_with_error "tool-chain prefix is not defined" }
 			}
 		}
@@ -379,6 +382,7 @@ namespace eval ::config {
 		set_if_undefined dbg_dir     [file join $var_dir dbg   $arch]
 		set_if_undefined run_dir     [file join $var_dir run]
 		set_if_undefined api_dir     [file join $var_dir api]
+		set_if_undefined install_dir [file join $var_dir install]
 	}
 
 	# make namespace procs available as subcommands

@@ -1,6 +1,9 @@
 # Sculpt version is required for publishing index projects
 set  sculpt_version 24.04
 
+# version of Genode toolchain
+set toolchain_version 23.05
+
 # archive versions
 set  version(genodelabs/api/base)                        2024-04-11
 set  version(genodelabs/api/base-linux)                  2024-04-11

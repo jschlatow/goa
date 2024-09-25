@@ -58,8 +58,9 @@ proc create_or_update_build_dir { } {
 	global ldlibs_exe ldlibs_so
 	global config::build_dir config::project_dir config::abi_dir
 	global config::cross_dev_prefix config::project_name
+	global config::toolchain_version
 
-	set qt5_tool_dir "/usr/local/genode/tool/23.05/bin"
+	set qt5_tool_dir "/usr/local/genode/tool/$toolchain_version/bin"
 	set qmake_platform [_qmake_platform]
 
 	if {![file exists $build_dir]} {
@@ -73,7 +74,9 @@ proc create_or_update_build_dir { } {
 
 	set qt5_api "qt5_base"
 
-	file link -symbolic qmake_root/bin $qt5_tool_dir
+	# $qt5_tool_dir might only exist in sandbox environment, hence use ln
+	exec ln -sf $qt5_tool_dir qmake_root/bin
+
 	file link -symbolic qmake_root/include [file join [api_archive_dir $qt5_api] include]
 	file link -symbolic qmake_root/lib $abi_dir
 
