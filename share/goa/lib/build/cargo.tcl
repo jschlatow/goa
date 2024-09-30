@@ -65,9 +65,9 @@ proc build { } {
 	if {!$debug} {
 		lappend cmd "-r" }
 	lappend cmd "--target" $tool_dir/cargo/x86_64-unknown-genode.json
-	lappend cmd --config target.x86_64-unknown-genode.linker="$cross_dev_prefix\gcc"
-	lappend cmd --config profile.release.panic="abort"
-	lappend cmd --config profile.dev.panic="abort"
+	lappend cmd --config target.x86_64-unknown-genode.linker=\\"$cross_dev_prefix\gcc\\"
+	lappend cmd --config {profile.release.panic=\"abort\"}
+	lappend cmd --config {profile.dev.panic=\"abort\"}
 	# let cargo know we need to build panic_abort too, see
 	# https://github.com/rust-lang/wg-cargo-std-aware/issues/29
 	lappend cmd -Z build-std=std,panic_abort

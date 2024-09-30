@@ -201,6 +201,14 @@ USAGE
 
   This command implies the 'depot-dir' command.
 
+:goa add-depot-user <name> --depot-url <url> --sq-user-id <id>:
+  Make a new depot user known at a Genode depot as software source
+  by specifying a URL and the public key as Sequoia key ID, i.e., the
+  email address. This command works only if the Sequoia keyring already
+  contains the specified user ID.
+
+  This command implies the 'depot-dir' command.
+
 :goa archive-versions:
   Print information about known depot-archive versions.
 

@@ -104,7 +104,7 @@ namespace eval goa {
 	##
 	# Implements 'goa add-depot-user'
 	#
-	proc add-depot-user { new_depot_user depot_url pubkey_file gpg_user_id } {
+	proc add-depot-user { new_depot_user depot_url pubkey_file gpg_user_id sq_user_id } {
 
 		global config::depot_dir
 
@@ -140,6 +140,12 @@ namespace eval goa {
 			if {[catch { exec gpg --armor --export $gpg_user_id > $new_pubkey_file } msg]} {
 				file delete -force $new_depot_user_dir
 				exit_with_error "exporting the public key from the GPG keyring failed\n$msg"
+			}
+		} else if {$sq_user_id != ""} {
+			exit_if_not_installed sq
+			if {[catch { exec sq key export --key $sq_user_id > $new_pubkey_file } msg]} {
+				file delete -force $new_depot_user_dir
+				exit_with_error "exporting the public key from the Sequoia keyring failed\n$msg"
 			}
 		}
 	}

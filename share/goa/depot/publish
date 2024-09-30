@@ -91,7 +91,7 @@ index_missing_error:
 # Generate compressed and signed archives and index files
 #
 
-include $(DEPOT_TOOL_DIR)/mk/gpg.inc
+include $(DEPOT_TOOL_DIR)/mk/sq.inc
 
 MISSING_PUBKEY_FILES := $(sort \
                            $(foreach A,$(ARCHIVES),\
@@ -99,8 +99,8 @@ MISSING_PUBKEY_FILES := $(sort \
                                  $(call pubkey_filename,$A))))
 
 $(PUBLIC_DIR)/%.xz.sig : $(PUBLIC_DIR)/%.xz
-	$(VERBOSE)$(GPG) --detach-sign --digest-algo SHA256 --no-tty --use-agent \
-	              --local-user $(call pubkey_id,$*) - < $< > $@ || \
+	$(VERBOSE)$(SQ) --no-cert-store --no-key-store sign \
+	              --signer-file $(call secret_key,$(call pubkey_id,$*)) --detached --output $@ $< || \
 	              ( rm -f $@; false )
 
 .PRECIOUS: $(TARGETS:.xz.sig=.xz)

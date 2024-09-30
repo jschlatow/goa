@@ -9,6 +9,8 @@ namespace eval goa {
 	namespace export export-dbg export-bin import-dependencies export-dependencies
 	namespace export published-archives download-foreign publish
 
+	exit_if_not_installed sq
+
 	proc exec_depot_tool { tool args } {
 		global verbose gaol tool_dir
 		global config::depot_dir config::public_dir config::jobs
@@ -26,11 +28,10 @@ namespace eval goa {
 		switch $tool {
 			dependencies { }
 			download {
-				lappend cmd --empty-gpg
 				lappend cmd --with-network
 			}
 			publish {
-				lappend cmd --user-gpg
+				lappend cmd --user-sq
 			}
 		}
 

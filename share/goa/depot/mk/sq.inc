@@ -1,11 +1,12 @@
 #
-# \brief  Helper for using the GNU privacy guard
+# \brief  Helper for using the Sequoita PGP
 # \author Norman Feske
+# \author Johannes Schlatow
 # \date   2017-03-27
 #
 
-# Allow the gpg command to be overridden on the command line
-GPG ?= gpg
+# Allow the sq command to be overridden on the command line
+SQ ?= sq
 
 pubkey_filename = $(call archive_user,$1)/pubkey
 
@@ -15,10 +16,12 @@ pubkey_path = $(firstword \
                                $(REP_SCULPT_DEPOT_DIRS))))
 
 # obtain key ID of 'depot/<user>/pubkey' to be used to select signing key
-pubkey_id = $(shell pubkey_file=$(call pubkey_path,$1); \
-                    $(GPG) --dry-run --with-colon --import \
-                           --import-options import-show $$pubkey_file 2> /dev/null |\
-                    head -n 1 | cut -d: -f5)
+pubkey_id = $(strip $(shell pubkey_file=$(call pubkey_path,$1); \
+                            $(SQ) inspect $$pubkey_file 2> /dev/null |\
+                            grep Fingerprint | cut -d: -f2))
+
+# obtain secret key file for a key ID
+secret_key = $(wildcard $(addprefix /sequoia/softkeys/,$1))
 
 MISSING_PUBKEY_FILES := $(sort \
                            $(foreach A,$(ARCHIVES),\

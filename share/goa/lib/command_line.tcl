@@ -226,13 +226,14 @@ if {$perform(add-depot-user)} {
 	set args(depot_url)         [consume_optional_cmdline_arg    "--depot-url"   ""]
 	set args(pubkey_file)       [consume_optional_cmdline_arg    "--pubkey-file" ""]
 	set args(gpg_user_id)       [consume_optional_cmdline_arg    "--gpg-user-id" ""]
+	set args(sq_user_id)        [consume_optional_cmdline_arg    "--sq-user-id" ""]
 	set config::depot_overwrite [consume_optional_cmdline_switch "--depot-overwrite"]
 	set config::depot_retain    [consume_optional_cmdline_switch "--depot-retain"]
 
 	set hint ""
 	append hint "\n Expected command:\n" \
             	"\n goa add-depot-user <name> --depot-url <url>" \
-            	"\[--pubkey-file <file> | --gpg-user-id <id>\]\n"
+            	"\[--pubkey-file <file> | --gpg-user-id <id>  --sq-user-id <id>\]\n"
 
 	if {[llength $argv] == 0} {
 		exit_with_error "missing user-name argument\n$hint" }
@@ -245,13 +246,18 @@ if {$perform(add-depot-user)} {
 	if {$args(depot_url) == ""} {
 		exit_with_error "missing argument '--depot-url <url>'\n$hint" }
 
-	if {$args(pubkey_file) == "" && $args(gpg_user_id) == ""} {
+	set argcount 0
+	if {$args(pubkey_file) != ""} { incr argcount }
+	if {$args(gpg_user_id) != ""} { incr argcount }
+	if {$args(sq_user_id) != ""}  { incr argcount }
+
+	if {!$argcount} {
 		exit_with_error "public key of depot user $args(new_depot_user) not specified\n$hint" }
 
-	if {$args(pubkey_file) != "" && $args(gpg_user_id) != ""} {
+	if {[expr $argcount > 1]} {
 		exit_with_error "public key argument is ambigious\n" \
-	                	 "\n You may either specify a pubkey file or a" \
-	                	 "GPG user ID but not both.\n$hint" }
+		                "\n You may either specify a pubkey file, a" \
+		                "GPG user ID or a Sequoia user ID.\n$hint" }
 
 	if {$args(pubkey_file) != "" && ![file exists $args(pubkey_file)]} {
 		exit_with_error "public-key file $args(pubkey_file) does not exist" }
