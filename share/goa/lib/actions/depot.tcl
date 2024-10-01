@@ -40,6 +40,7 @@ namespace eval goa {
 
 		lappend cmd [file join /tool depot $tool]
 		lappend cmd REPOSITORIES=
+		lappend cmd XZ_THREADS=$jobs
 
 		if {$tool == "publish"} {
 			exec -ignorestderr {*}$cmd -j$jobs {*}$args
