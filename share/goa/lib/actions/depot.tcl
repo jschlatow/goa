@@ -30,22 +30,29 @@ namespace eval goa {
 			download {
 				lappend cmd --with-network
 			}
-			publish {
-				lappend cmd --user-sq
-			}
+			publish { }
 		}
 
 		if {$verbose} {
 			lappend cmd --verbose }
 
-		lappend cmd [file join /tool depot $tool]
-		lappend cmd REPOSITORIES=
-		lappend cmd XZ_THREADS=$jobs
+		set     depot_cmd [file join /tool depot $tool]
+		lappend depot_cmd REPOSITORIES=
+		lappend depot_cmd XZ_THREADS=$jobs
 
 		if {$tool == "publish"} {
-			exec -ignorestderr {*}$cmd -j$jobs {*}$args
+			# first, get required keys by adding DRY_RUN=1
+			set key_args {}
+			catch {
+				set keys [exec -ignorestderr {*}$cmd {*}$depot_cmd DRY_RUN=1 -j$jobs {*}$args | grep Keys]
+
+				foreach key [string trim [lindex [split $keys ":"] 1]]  {
+					lappend key_args --with-secret-key $key }
+			}
+
+			exec -ignorestderr {*}$cmd {*}$key_args {*}$depot_cmd -j$jobs {*}$args >@ stdout
 		} else {
-			exec {*}$cmd {*}$args
+			exec {*}$cmd {*}$depot_cmd {*}$args
 		}
 	}
 
@@ -805,7 +812,7 @@ namespace eval goa {
 	
 			diag "publish depot archives: $archives"
 	
-			if {[catch { exec_depot_tool publish {*}$args >@ stdout }]} {
+			if {[catch { exec_depot_tool publish {*}$args}]} {
 				exit_with_error "failed to publish the following depot archives:\n" \
 				                [join $archives "\n "] }
 		}

@@ -12,7 +12,7 @@ define HELP_MESSAGE
 
   usage:
 
-    $(firstword $(MAKEFILE_LIST)) <archive-path> {PUBLIC_DIR=<public>} {DBG=1}
+    $(firstword $(MAKEFILE_LIST)) <archive-path> {PUBLIC_DIR=<public>} {DBG=1} {DRY_RUN=1}
 
   The <archive-path> denotes the archives (and implicitly their
   dependencies) to publish from the depot to the public directory.
@@ -26,6 +26,9 @@ define HELP_MESSAGE
 
   With the optional 'DBG=1' argument, 'dbg' archives are published
   in addition to the corresponding 'bin' archives.
+
+  With the optional 'DRY_RUN=1' argument, the tool print the archives that need
+  publishing and the required keys for signing.
 
 endef
 
@@ -98,10 +101,19 @@ MISSING_PUBKEY_FILES := $(sort \
                               $(if $(call pubkey_path,$A),,\
                                  $(call pubkey_filename,$A))))
 
+ifneq ($(DRY_RUN),)
+print_keys:
+	@$(ECHO) "Publishing: $(ARCHIVES)"
+	@$(ECHO) "Keys: $(sort $(foreach A,$(ARCHIVES),$(call pubkey_id,$A)))"
+
+$(PUBLIC_DIR)/%.xz.sig : print_keys
+	@true
+else
 $(PUBLIC_DIR)/%.xz.sig : $(PUBLIC_DIR)/%.xz
 	$(VERBOSE)$(SQ) --no-cert-store --no-key-store sign \
 	              --signer-file $(call secret_key,$(call pubkey_id,$*)) --detached --output $@ $< || \
 	              ( rm -f $@; false )
+endif
 
 .PRECIOUS: $(TARGETS:.xz.sig=.xz)
 
@@ -124,4 +136,3 @@ endif
 
 $(MAKECMDGOALS): $(TARGETS)
 	@true
-
