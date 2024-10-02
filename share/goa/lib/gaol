@@ -26,10 +26,10 @@ namespace eval gaol {
 	# network  | boolean
 	# make     | boolean
 	# gpg      | {user, empty}
-	# sq_keys  | boolean
+	# sq_keys  | list of keys
 	# depot    | path to depot directory
 	variable state [dict create env [dict create] \
-	                            robinds {} binds {} symlinks {} dirs {} \
+	                            robinds {} binds {} symlinks {} dirs {} sq_keys {} \
 	                            verbose 0 network 0 make 0]
 
 	proc --system-usr { args } {
@@ -213,12 +213,18 @@ namespace eval gaol {
 		gaol::parse_next args
 	}
 
-	proc --user-sq { args } {
-		variable state
-		dict set state sq_keys 1
+	proc --with-secret-key { key args } {
+		gaol::validate_no_opt $key
 
 		if {[auto_execok "sq"] == ""} {
 			return -code error "'sq' binary not found. Please install sequoia-sq" }
+
+		if {[catch {exec sq key export --cert $key}]} {
+			return -code error "Unable to export secret key $key from sequoia" }
+
+		variable state
+		dict lappend state sq_keys $key
+
 		gaol::parse_next args
 	}
 
@@ -253,10 +259,11 @@ namespace eval gaol {
 			"" \
 			"Program-specific policies:" \
 			"  --make                   Passes depot-tool-specific variables to make" \
-			"  --user-sq                Binds the user's sequoia keystore" \
 			"  --user-gpg               Binds the user's gnupg config dir and socket dir" \
 			"  --empty-gpg              Creates an empty ~/.gnupg directory to prevent" \
 			"                           the use of keyboxd" \
+			"  --with-secret-key <id>   Exports key <id> from sequoia keystore and makes it" \
+			"                           available at /sequoia/softkeys/<id>" \
 			"" \
 			"Passed-through options:" \
 			"  --setenv <var> <value>   Sets environment variable <var> to <value>" \
@@ -345,19 +352,12 @@ namespace eval gaol {
 
 			set pipeargs {}
 			set fdnum 11
-			if {[info exists sq_keys] && $sq_keys} {
-				if {![info exists depot]} {
-					return -code error "missing --depot-dir argument (required for --user-sq)" }
+			foreach key $sq_keys {
+				if {[catch {exec sq key export --cert $key}]} { continue }
 
-				set pubkey_files [exec find $depot -maxdepth 2 -type f -name pubkey]
-				foreach f $pubkey_files {
-					set fingerprint [string trimleft [exec sq inspect $f 2> /dev/null | grep Fingerprint | cut -d: -f2]]
-					if {[catch {exec sq key export --cert $fingerprint}]} { continue }
-
-					lappend cmd --perms 0400 --ro-bind-data $fdnum /sequoia/softkeys/$fingerprint
-					lappend pipeargs $fdnum< "<(sq key export --cert $fingerprint | sq key password --clear-password --cert-file -)"
-					incr fdnum
-				}
+				lappend cmd --perms 0400 --ro-bind-data $fdnum /sequoia/softkeys/$key
+				lappend pipeargs $fdnum< "<(sq key export --cert $key | sq key password --clear-password --cert-file -)"
+				incr fdnum
 			}
 
 			foreach { src dest } $robinds {
