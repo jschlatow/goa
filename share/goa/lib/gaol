@@ -301,6 +301,40 @@ namespace eval gaol {
 		}
 	}
 
+	##
+	# adds {$path $at} into robinds unless $at or any subdirectory is already
+	# present in robinds. In the latter case, the non-conflicting subdirectories
+	# of $at are added to robinds
+	proc add_disjoint_robind { &robinds path at } {
+		upvar ${&robinds} robinds
+
+		set add_unmodified 1
+		foreach { src dest } $robinds {
+			# skip duplicates
+			if {[file join $at] == [file join $dest]} {
+				set add_unmodified 0
+				break
+			}
+
+			set prefix "[file join $at]/"
+			if {[string match "$prefix*" $dest]} {
+				# if $suffix is present in $path, we can bind it
+				set suffix [string range $dest [string length $prefix] end]
+				if {[file exists [file join $path $suffix]]} { break }
+
+				# recurse into add_disjoint_robinds on subdirectory
+				foreach sub [glob "[file join $path]/*"] {
+					add_disjoint_robind robinds [file join $path $sub] [file join $at $sub]
+				}
+				set add_unmodified 0
+				break
+			}
+		}
+
+		if {$add_unmodified} {
+			lappend robinds $path $at }
+	}
+
 	proc run { bin args } {
 		global error_spawn_id user_spawn_id
 		variable state
@@ -359,6 +393,19 @@ namespace eval gaol {
 					incr fdnum
 				}
 			}
+
+			# sort robinds by target paths in reverse order
+			set robinds [lsort -stride 2 -index 1 -decreasing $robinds]
+
+			# make sure that robinds are disjoint (remove duplicates, split
+			# prefixes into subdirectories)
+			set new_robinds { }
+			foreach { src dest } $robinds {
+				add_disjoint_robind new_robinds $src $dest }
+			set robinds $new_robinds
+
+			# sort robinds by target paths so that parent directories appear first
+			set robinds [lsort -stride 2 -index 1 $robinds]
 
 			foreach { src dest } $robinds {
 				lappend cmd --ro-bind $src $dest }
