@@ -4,7 +4,7 @@ proc create_or_update_build_dir { } {
 	mirror_source_dir_to_build_dir
 
 	global build_dir cross_dev_prefix project_name project_dir api_dirs
-	global cppflags cflags cxxflags ldflags ldlibs_common ldlibs_exe
+	global cppflags cflags cxxflags ldflags ldlibs_common ldlibs_exe ldlibs_so
 
 	# invoke configure script only once
 	if {[file exists [file join $build_dir config.status]]} {
@@ -42,6 +42,7 @@ proc create_or_update_build_dir { } {
 	lappend cmd "CXXFLAGS=$cxxflags"
 	lappend cmd "LDFLAGS=$ldflags $ldlibs_common"
 	lappend cmd "LDLIBS=$ldlibs_common $ldlibs_exe"
+	lappend cmd "LDLIBS_SHARED=$ldlibs_common $ldlibs_so"
 	lappend cmd "LIBS=$ldlibs_common $ldlibs_exe"
 	lappend cmd "CXX=${cross_dev_prefix}g++"
 	lappend cmd "CC=${cross_dev_prefix}gcc"
