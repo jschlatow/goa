@@ -65,6 +65,9 @@ namespace eval query {
 			if {[llength $result] == 0} {
 				return -code error -errorcode NODE_MISSING "No node '$path' in $data" } 
 
+			# only return the first matching subnode
+			set result [::node first-node $result]
+
 			if {![::node enabled $result]} {
 				exit_with_error "subnode '$path' from $data is disabled"
 			}
