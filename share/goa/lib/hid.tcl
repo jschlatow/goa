@@ -63,7 +63,7 @@ namespace eval hid {
 
 		# diag "Executing: " {*}$cmd {*}$args $input
 
-		exec {*}$cmd {*}$args $input
+		exec {*}$cmd {*}$args $input 2> /dev/null
 	}
 
 	# format 'input' to XML
