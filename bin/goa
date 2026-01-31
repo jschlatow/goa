@@ -55,6 +55,8 @@ if {$config::disable_sandbox} {
 
 source [file join $tool_dir lib actions generic.tcl]
 
+migrate_to_codeberg
+
 ##################
 ## Main program ##
 ##################
