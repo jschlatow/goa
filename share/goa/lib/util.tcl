@@ -931,7 +931,6 @@ proc user_confirmation { msg default_yes } {
 		-nocase n { expr 0 }
 		-nocase y { expr 1 }
 		-re "\n"  { expr $default_yes }
-		timeout   { expr 0 }
 	}]
 }
 
